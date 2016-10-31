@@ -1,135 +1,151 @@
 # -*- coding: utf-8 -*-
 """
 Implementations of all the needed methods to run
-the project, including the 6 asked methods.
+the project, including the 6 asked methods (The first 6).
 """
 import numpy as np
+from helpers import batch_iter
 
 """
-The implementation of least_squares_GD
+Least squares in gradient descent
 """
-# TODO Make it match the needed function in submission
-def least_squares_GD(y, tx, gamma, max_iters):
-    initial_w = np.zeros(tx.shape[1])
-    ws = [initial_w]
-    losses = []
+def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     w = initial_w
     for n_iter in range(max_iters):
-        grad = compute_gradient(y,tx,w)
-        loss = compute_loss(y,tx,w)
 
-        # TODO Explain this line
-        gamma = gamma/1.005
+        #computing the gradient and the loss
+        grad = compute_gradient(y, tx, w)
+        loss = compute_loss(y, tx, w)
 
+        #update w by gradient
         w = w - gamma * grad
 
-        # storing w and loss
-        ws.append(np.copy(w))
-        losses.append(loss)
-        print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-              bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
-
-    return ws, losses
+    return w, loss
 
 """
-The least squares method used for least squares gradient descent.
+Least squares in stochastic gradient descent
+"""
+def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
+    batch_size = 1
+
+    w = initial_w
+    for n_iter in range(max_iters):
+
+        #compute gradient and loss
+        loss = compute_loss(y, tx, w)
+        tao = batch_iter(y, tx, batch_size, num_batches=1, shuffle=True)
+        y_b, tx_b = next(tao)
+        grad = compute_gradient(y_b, tx_b, w)
+
+        #update w by gradient
+        w = w - gamma * grad
+
+    return w, loss
+
+"""
+Simple Least squares
 """
 def least_squares(y, tx):
-    w = np.linalg.solve((tx.T).dot(tx), (tx.T).dot(y))
+    w = np.linalg.solve((tx.transpose()).dot(tx), (tx.transpose()).dot(y))
     loss = compute_loss(y, tx, w)
+
     return w, loss
 
 """
-The ridge regression method implementation.
+Ridge regression using matrix computation
 """
 def ridge_regression(y, tx, lambda_):
-    w = np.linalg.solve((tx.T).dot(tx) + lamb_*np.identity(tx.shape[1]), (tx.T).dot(y))
+    w = np.linalg.solve((tx.transpose()).dot(tx) + 2 * tx.shape[0] * lambda_ * np.eye((tx.shape[1])), (tx.transpose()).dot(y))
     loss = compute_loss(y, tx, w)
+
     return w, loss
 
 """
-The logistic regression using gradient descent.
+Logistic regression with gradient descent
 """
-# TODO Improve, and fix the formatting to pass normal tests.
-# TODO Talk about if this is in fact irls or logistic. Rename ?
-def irls(X, y):
-    theta = np.zeros(X.shape[1])
-    theta_ = np.inf
-    eps = 50000
-    for aqua in range (20):
-        grad = np.zeros(X.shape[1])
-        a = np.dot(X, theta)
-        pi = sigmoid(a)
-        SX = X * (pi - pi*pi).reshape(-1, 1)
-        XSX = np.dot(X.T, SX)
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
+    w = initial_w
 
-        for aw in range (len(X)):
-            grad = grad + (-1 / len(X)) * (y[aw] * X[aw,:] * sigmoid(-y[aw] * np.dot(X[aw,:], theta)))
+    for i in range(max_iters):
+        grad = np.zeros(tx.shape[1])
 
-        theta = theta - eps * np.linalg.solve(XSX, grad)
-        print(sum(y==np.sign(np.dot(X, theta))) / len(y))
+        sigma = sigmoid(tx.dot(w))
+        SX = tx * (sigma - sigma*sigma).reshape(-1,1)
+        XSX = tx.transpose().dot(SX)
 
-        if aqua % 5==0 and aqua !=0:
-            eps = eps * 0.5
-    return theta
+        for aw in range(tx.shape[0]):
+            grad = grad + (-1 / tx.shape[0]) * (y[aw] * tx[aw,:] * sigmoid(-y[aw] * np.dot(tx[aw,:], w)))
 
-"""
-The regularized logistic regression using gradient descent.
-"""
-# TODO Improve, and fix the formatting to pass normal tests.
-def reg_irls(X, y):
-    theta = np.zeros(X.shape[1])
-    theta_ = np.inf
-    eps = 100000
-    lamda = 10**-8
-    for aqua in range (15):
-        grad = np.zeros(X.shape[1])
-        a = np.dot(X, theta)
-        pi = sigmoid(a)
-        SX = X * (pi - pi*pi).reshape(-1,1)
-        XSX = np.dot(X.T, SX) + lamda * np.eye((len(X[0])))
-        for aw in range (len(X)):
-            grad = grad + (-1 / len(X)) * (y[aw] * X[aw,:] * logistic(-y[aw] * np.dot(X[aw,:], theta)))
+        w = w - gamma * np.linalg.solve(XSX, grad)
 
-        theta = theta - eps * np.linalg.solve(XSX, grad) - eps * lamda * theta
-        print(sum(y==np.sign(np.dot(X, theta))) / len(y))
+        if i % 5 == 0 and i != 0:
+            gamma = gamma * 0.55
 
-        if aqua % 5==0 and aqua != 0:
-            eps = eps * 0.5
-    return theta
+    loss = compute_logistic_loss(y, tx, w)
+
+    return w, loss
 
 """
-Splits the dataset based on the split ratio.
+The regularized logistic regression using gradient descent
 """
-def split_data(x, y, ratio, seed=1):
-    # setting the seed
-    np.random.seed(seed)
-    indices = np.random.permutation(x.shape[0])
-    training_ratio = int(np.floor(ratio * x.shape[0]))
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
+    w = initial_w
 
-    x_training = x[indices[0:training_ratio]]
-    y_training = y[indices[0:training_ratio]]
-    x_testing = x[indices[training_ratio:]]
-    y_testing = y[indices[training_ratio:]]
-    return x_training, x_testing, y_training, y_testing
+    for i in range(max_iters):
+        grad = np.zeros(tx.shape[1])
+
+        sigma = sigmoid(tx.dot(w))
+        SX = tx * (sigma - sigma*sigma).reshape(-1,1)
+        XSX = tx.transpose().dot(SX) + lambda_*np.eye((tx.shape[1]))
+
+        for aw in range(tx.shape[0]):
+            grad = grad + (-1 / tx.shape[0]) * (y[aw] * tx[aw,:] * sigmoid(-y[aw] * np.dot(tx[aw,:],w)))
+
+        w = w - gamma * np.linalg.solve(XSX, grad) - gamma * lambda_*w
+
+        if i % 5 == 0 and i != 0:
+            gamma = gamma * 0.55
+
+    loss=compute_logistic_loss(y, tx, w)
+
+    return w, loss
 
 """
-Computes the MSE of the given weights applied to tx.
+Computes the MSE of the given weights applied to tx
 """
 def compute_loss(y, tx, w):
     e = y - np.dot(tx, w)
     mse = np.dot(e.transpose(), e) / (2 * len(tx))
+
     return mse
 
 """
-The simple sigmois function
+Computes the MSE using the sigmoid
 """
-def sigmoid(a):
-    return 1.0 / (1 + np.exp(-a))
+def compute_logistic_loss(y, tx, w):
+    a = 1 / (2 * y.shape[0])
+    b = np.sum(np.square(y - (2 * sigmoid(np.dot(tx, w)) - 1)))
+
+    return a * b
 
 """
-Computes the gradient with respect to y, tx and w.
+The simple sigmoid function applicable to a scalar
+"""
+def sig(a):
+    if a > 0:
+        return 1.0 / (1 + np.exp(-a))
+    else:
+        return np.exp(a) / (1.0 + np.exp(a))
+
+"""
+The vectorized version of sigmoid
+"""
+sigmoid = np.vectorize(sig)
+
+"""
+Computes the gradient with respect to y, tx and w
 """
 def compute_gradient(y, tx, w):
     e = y - tx.dot(w)
-    return (-1/y.shape[0])*tx.T.dot(e)
+
+    return (-1 / y.shape[0]) * tx.transpose().dot(e)
