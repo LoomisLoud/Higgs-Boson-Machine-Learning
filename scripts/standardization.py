@@ -22,6 +22,7 @@ def standardize_original(tX):
   return stdtX, stdevtrain, s_mean
 
 def standardize_basis(tX):
+  # Resetting all the data
   b_mean = np.mean(tX,axis=0)
   centered_mat = tX - b_mean
   centered_mat[tX==0] = 0

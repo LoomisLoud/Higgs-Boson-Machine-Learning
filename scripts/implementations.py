@@ -106,7 +106,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         if i % 5 == 0 and i != 0:
             gamma = gamma * 0.55
 
-    loss=compute_logistic_loss(y, tx, w)
+    loss = compute_logistic_loss(y, tx, w)
 
     return w, loss
 

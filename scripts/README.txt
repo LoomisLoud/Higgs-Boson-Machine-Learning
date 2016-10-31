@@ -6,6 +6,16 @@ contains all the code needed to reproduce our best score, but also to
 conduct much more experiments, like running any other regression method
 than the one we used ourselves.
 
+If you did not yet read our report, do not forget that this code must be
+run on a 16GB RAM *nix machine at least. We explain the tradeoff in the
+report extensively.
+
+You will find in the build_polynomial file all of the possible polynomials
+you can use to run the project, in implementations, our machine learning
+methods, in standardization the way we standardized our matrices, and
+finally in run.py the bulk of the project, the actual process to obtain
+the same predictions we got in the leaderboard.
+
 
 In order to run this project, you need to:
 
