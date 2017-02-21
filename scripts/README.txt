@@ -1,6 +1,6 @@
 ===========================================================================
 
-This is our implementation of the PCML project 1, the aim is to find Higg's
+This is our implementation of the Higg's Boson search (PCML, EPFL), the aim is to find Higg's
 Boson, or at least to get the closest possible to it. This repository
 contains all the code needed to reproduce our best score, but also to
 conduct much more experiments, like running any other regression method
